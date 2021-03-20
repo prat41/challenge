@@ -10,6 +10,27 @@ import datetime
 
 course_data = data.load_data()
 
+
+def binary_search(arr, x):
+    low = 0
+    high = len(arr) - 1
+    mid = 0
+    while low <= high:
+
+        mid = (high + low) // 2
+
+        if arr[mid] < x:
+            low = mid + 1
+
+        elif arr[mid] > x:
+            high = mid - 1
+
+        else:
+            return mid
+
+    return -1
+
+
 @app.route("/course/<int:id>", methods=['GET'])
 def get_course(id):
     """Get a course by id.
@@ -64,13 +85,76 @@ def get_courses():
     # print(search_queery)
     # print((search_queery).split(','))
     li = []
-    for i in course_data['data']:
-        if any(map(lambda s : s in i['title'].lower(), search_queery.split(','))):
-            li.append(i)
+    result = []
 
-    return {"list":li}
-        # if search_queery in i['title'].lower():
-        # #     return i
+    f_data  = {}
+
+    if page_size:
+        f_data = course_data
+    else:
+        page_size = 10
+
+    if page_number:
+        f_data = course_data
+    else:
+        page_number = 1
+
+
+    if search_queery:
+        for i in course_data['data']:
+            if any(map(lambda s: s in i['title'].lower(), search_queery.split(','))):
+                li.append(i)
+        f_data['data'] = li
+    else:
+        f_data = course_data
+
+    if int(page_size) > 0 :
+        result = f_data['data'][(int(page_number)-1) * int(page_size) : (int(page_number)-1) * int(page_size) + int(page_size)]
+
+    v = (len(f_data['data'])) / (int(page_size))
+    u = int(v)
+    if v > u:
+        u = u+1
+
+
+    return {"data": result,
+            "metadata": {
+                        "page_count": u ,
+                        "page_number": page_number,
+                        "page_size": page_size,
+                        "record_count": len(f_data['data'])
+            }
+    }
+
+
+
+
+
+
+
+
+    # def pagesize():
+    #     if int(str(page_size)) == 10:
+    #         return course_data
+    #     else:
+    #         return {"message":"Page size not found"}
+    #
+    # def pagenumber():
+    #     if int(str(page_number)) == 1:
+    #         return course_data
+    #     else:
+    #         return {"message":"Page Number not found"}
+
+
+    # li = []
+    # for i in course_data['data']:
+    #     if any(map(lambda s : s in i['title'].lower(), search_queery.split(','))):
+    #         li.append(i)
+    #
+
+
+
+
 
 
 
