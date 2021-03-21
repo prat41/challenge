@@ -11,25 +11,24 @@ import datetime
 course_data = data.load_data()
 
 
-def binary_search(arr, x):
+def binary_search(data, id):
     low = 0
-    high = len(arr) - 1
-    mid = 0
-    while low <= high:
+    length = len(data) - 1
+    middle = 0
+    while low <= length:
 
-        mid = (high + low) // 2
+        middle = (length + low) // 2
 
-        if arr[mid] < x:
-            low = mid + 1
+        if data[middle]['id'] < id:
+            low = middle + 1
 
-        elif arr[mid] > x:
-            high = mid - 1
+        elif data[middle]['id'] > id:
+            length = middle - 1
 
         else:
-            return mid
+            return data[id - 1]
 
-    return -1
-
+    return {"message": "Course {} does not exist".format(id)}
 
 @app.route("/course/<int:id>", methods=['GET'])
 def get_course(id):
@@ -46,13 +45,8 @@ def get_course(id):
     -------------------------------------------------------------------------   
     1. Bonus points for not using a linear scan on your data structure.
     """
-    # YOUR CODE HERE
-    for i in course_data['data']:
-        if i['id'] == id:
-            return i
 
-    return {"message": "Course {} does not exist".format(id)}
-
+    return jsonify(binary_search(course_data['data'], id))
 
 @app.route("/course", methods=['GET'])
 def get_courses():
@@ -78,12 +72,9 @@ def get_courses():
        requests/second.
     """
     # YOUR CODE HERE
-    search_queery = request.args.get('titlewords')
+    search_query = request.args.get('titlewords')
     page_size = request.args.get('page-size')
     page_number = request.args.get('page-number')
-
-    # print(search_queery)
-    # print((search_queery).split(','))
     li = []
     result = []
 
@@ -100,9 +91,9 @@ def get_courses():
         page_number = 1
 
 
-    if search_queery:
+    if search_query:
         for i in course_data['data']:
-            if any(map(lambda s: s in i['title'].lower(), search_queery.split(','))):
+            if any(map(lambda s: s in i['title'].lower(), search_query.split(','))):
                 li.append(i)
         f_data['data'] = li
     else:
@@ -127,39 +118,6 @@ def get_courses():
     }
 
 
-
-
-
-
-
-
-    # def pagesize():
-    #     if int(str(page_size)) == 10:
-    #         return course_data
-    #     else:
-    #         return {"message":"Page size not found"}
-    #
-    # def pagenumber():
-    #     if int(str(page_number)) == 1:
-    #         return course_data
-    #     else:
-    #         return {"message":"Page Number not found"}
-
-
-    # li = []
-    # for i in course_data['data']:
-    #     if any(map(lambda s : s in i['title'].lower(), search_queery.split(','))):
-    #         li.append(i)
-    #
-
-
-
-
-
-
-
-
-
 @app.route("/course", methods=['POST'])
 def create_course():
     """Create a course.
@@ -176,7 +134,6 @@ def create_course():
     # YOUR CODE HERE
     date_created = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     date_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # title, image_path, price, on_discount, discount_price, description
     title = request.json['title']
     image_path = request.json['image_path']
     price = request.json['price']
@@ -184,21 +141,71 @@ def create_course():
     discount_price = request.json['discount_price']
     description = request.json['description']
     created_data = {}
-    # if len(title) < 5 and len(title) > 100:
-    #     return {"message" : "title length should not be less than 5 or greater than 100"}
-    # else:
-    #     created_data['title'] =
+
+    li = []
 
 
 
+    if len(title) in range(5,101):
+        created_data['title'] = title
+    else:
+        li.append(False)
+
+    if type(price) == float or type(price) == int:
+        created_data['price'] = float(price)
+    else:
+        li.append(False)
+
+    if type(on_discount) == bool:
+        created_data['on_discount'] = on_discount
+    else:
+        li.append(False)
+
+    if len(image_path) <= 100:
+        created_data["image_path"] = image_path
+    else:
+        li.append(False)
+
+    if len(description) <= 255:
+        created_data["description"] = description
+    else:
+        li.append(False)
 
 
+    if all(li):
+        created_data['id'] = len(course_data['data']) + 1
+        created_data['date_created'] = date_created
+        created_data['date_updated'] = date_updated
 
+        # courses = {}
+        # with open('json/course.json') as f:
+        #     data = json.load(f)
+        #     courses["data"] = data
 
-    li = ["date_created","date_updated","title", "image_path", "price", "on_discount", "discount_price", "description"]
-    li2 = [date_created, date_updated, title, image_path, price, on_discount, discount_price, description]
-    return dict(zip(li,li2))
+        def write_json(data1, filename='json/course.json'):
 
+            with open(filename, 'w') as f:
+                json.dump(data1, f, indent=4)
+
+        with open('json/course.json') as json_file:
+            data1 = json.load(json_file)
+            temp = data1
+            # print(data1)
+            # print("This is Temp", temp)
+            y = created_data
+            temp.append(y)
+            # print("This appended",temp, end='\n\n\n')
+
+        write_json(data1)
+        # print(course_data['data'][195:200])
+        course_data['data'] = data.load_data()['data']
+        return jsonify(course_data['data'][created_data['id']-1])
+    else:
+        return {"message":"Error in Creating Course"}
+
+    # course_data['data'].append(created_data)
+    # with open('json/course.json', 'w') as outfile:
+    #     json.dump(created_data, outfile)
 
 
 
@@ -223,6 +230,55 @@ def update_course(id):
 
     """
     # YOUR CODE HERE
+
+    date_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    title = request.json['title']
+    image_path = request.json['image_path']
+    price = request.json['price']
+    on_discount = request.json['on_discount']
+    discount_price = request.json['discount_price']
+    description = request.json['description']
+
+    updated_data = {}
+    li = []
+
+    if len(title) in range(5, 101):
+        updated_data['title'] = title
+    else:
+        li.append(False)
+
+    if type(price) == float or type(price) == int:
+        updated_data['price'] = float(price)
+    else:
+        li.append(False)
+
+    if discount_price:
+        updated_data['discount_price'] = int(discount_price)
+    else:
+        li.append(False)
+
+    if type(on_discount) == bool:
+        updated_data['on_discount'] = on_discount
+    else:
+        li.append(False)
+
+    if len(image_path) <= 100:
+        updated_data["image_path"] = image_path
+    else:
+        li.append(False)
+
+    if len(description) <= 255:
+        updated_data["description"] = description
+    else:
+        li.append(False)
+
+    updated_data['date_updated'] = date_updated
+
+    course_data['id']
+
+
+
+
 
 
 @app.route("/course/<int:id>", methods=['DELETE'])
